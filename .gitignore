@@ -1,0 +1,70 @@
+.DS_Store
+*.log
+Thumbs.db
+__pycache__/
+*.pyc
+
+# Raw/staged media staged locally — not for git
+media_raw/
+
+# Local scratch / debug artifacts — not part of the site
+debug_images/
+_preview*.mp4
+
+# local preview harnesses (not part of the site)
+_devices.html
+_mprobe.html
+_type-preview.html
+_probe.html
+_a.html
+_b.html
+_c.html
+_d.html
+_type/
+_one.html
+_cpl.html
+_cap.html
+_e.html
+_f.html
+_ef.html
+_type/
+_hp.html
+_hp2.html
+_video-compare.html
+_preview/
+_pip.html
+_side.html
+_pip.html
+_bottom.html
+_stereo-layouts.html
+
+# anonymization scratch files (never commit)
+err.log
+.viewer_err.log
+.viewer_mp4_list.txt
+.viewer_mp4_done.txt
+.viewer_batch.txt
+.strip_batch.sh
+.viewer_*
+
+# --- oversized masters, excluded to stay under the GitHub Pages 1 GB cap ---
+# These are NOT requested by the page: index.html loads the 1080p derivatives
+# in data/web-video/ instead. The files remain on disk locally, and are still
+# the inputs scripts/optimize_site_media.py regenerates derivatives from.
+/data/*.mp4
+/data/*.mov
+!/data/failure_ambiguity_boba.mp4
+!/data/failure_pot_014.mp4
+!/data/failure_thrashing_marker.mp4
+!/data/failure_wrench_006.mp4
+!/data/sim_autonomous_plate.mp4
+!/data/sim_autonomous_pot.mp4
+!/data/sim_autonomous_spoon.mp4
+!/data/sim_autonomous_tape.mp4
+!/data/sim_autonomous_tiger.mp4
+!/data/sim_autonomous_tray.mp4
+!/data/wrist_views_boba.mp4
+!/data/wrist_views_pot.mp4
+/data/results-sdr/
+/data/results-av1/
+/data/results-hlg/

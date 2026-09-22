@@ -1,0 +1,1587 @@
+<html>
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>Active Visual Fixation for Precise Manipulation without Wrist Cameras</title>
+
+    <!-- ===================================================================
+         Website Metadata. og:image must stay an absolute URL: scrapers do
+         not resolve relative paths. Bump the ?v= when the card is replaced,
+         since the crawlers cache it aggressively.
+    ==================================================================== -->
+    <meta content="A single actively-fixating stereo camera matches ego + wrist camera performance on precise manipulation. The robot learns where to look with RL." name="description" />
+    <meta content="Active Visual Fixation for Precise Manipulation without Wrist Cameras" property="og:title" />
+    <meta content="A single actively-fixating stereo camera matches ego + wrist camera performance on precise manipulation. The robot learns where to look with RL." property="og:description" />
+    <meta content="https://avf-icra.github.io/data/previewcard.jpg?v=1" property="og:image" />
+    <meta content="1200" property="og:image:width" />
+    <meta content="630" property="og:image:height" />
+    <meta content="AVF gripper in front of a toaster on the evaluation workspace" property="og:image:alt" />
+    <meta content="https://avf-icra.github.io/" property="og:url" />
+    <meta content="Active Visual Fixation" property="og:site_name" />
+    <meta content="Active Visual Fixation for Precise Manipulation without Wrist Cameras" property="twitter:title" />
+    <meta content="A single actively-fixating stereo camera matches ego + wrist camera performance on precise manipulation. The robot learns where to look with RL." property="twitter:description" />
+    <meta content="https://avf-icra.github.io/data/previewcard.jpg?v=1" property="twitter:image" />
+    <meta content="AVF gripper in front of a toaster on the evaluation workspace" property="twitter:image:alt" />
+    <meta property="og:type" content="website" />
+    <meta content="summary_large_image" name="twitter:card" />
+    <link rel="canonical" href="https://avf-icra.github.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin="anonymous" />
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js" type="text/javascript"></script>
+    <script
+        type="text/javascript">WebFont.load({ google: { families: ["Lato:100,100italic,300,300italic,400,400italic,700,700italic,900,900italic", "Montserrat:100,100italic,200,200italic,300,300italic,400,400italic,500,500italic,600,600italic,700,700italic,800,800italic,900,900italic", "Ubuntu:300,300italic,400,400italic,500,500italic,700,700italic", "Open Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic", "Changa One:400,400italic", "Varela Round:400", "Bungee Shade:regular", "Roboto:300,regular,500", "Bungee Outline:regular"] } });</script>
+    <!--[if lt IE 9]><script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" type="text/javascript"></script><![endif]-->
+
+    <!-- JQuery, scripts etc -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="script.js?v=media1" type="text/javascript"></script>
+
+    <!-- Stylesheets; tabler icons, font-awesome, fonts, ...-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/iconfont/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link href="style.css?v=media1" rel="stylesheet" type="text/css" />
+    <link href="gaze-transformer.css" rel="stylesheet" />
+    <script src="gaze-transformer.js" defer></script>
+    <link href="simulated-gaze.css" rel="stylesheet" />
+    <script src="simulated-gaze.js" defer></script>
+    <link href="fixation-actions.css" rel="stylesheet" type="text/css" />
+    <script src="fixation-actions.js" defer></script>
+    <script src="distractor-results.js" defer></script>
+    <link href="fixation-panels.css" rel="stylesheet" type="text/css" />
+    <link href="media.css?v=1" rel="stylesheet" />
+    <script src="media.js?v=2" defer></script>
+    <script src="fixation-panels.js?v=media1" defer></script>
+
+    <!-- Carousel + separator styles -->
+    <style>
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .carousel-track-container {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .carousel-nav {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 12px;
+        }
+
+        .carousel-indicator {
+            width: 16px;
+            height: 16px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .carousel-indicator::before {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #d0d0d0;
+            content: "";
+            transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .carousel-indicator:hover::before {
+            background: #aaa;
+        }
+
+        .carousel-indicator.current-slide::before {
+            background: #777;
+            transform: scale(1.1);
+        }
+
+        .carousel-indicator:focus-visible {
+            outline: 1px solid #777;
+            outline-offset: 1px;
+        }
+
+
+
+        /* Placeholder box shown wherever real media has not been dropped in yet.
+           Delete .media-placeholder usages once data/ is populated. */
+        .media-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 12px, #e8e8e8 12px, #e8e8e8 24px);
+            border: 2px dashed #bbb;
+            border-radius: 12px;
+            color: #888;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 15px;
+            text-align: center;
+            padding: 1em;
+            box-sizing: border-box;
+        }
+
+    </style>
+    <link rel="icon" type="image/svg+xml" href="data/favicon-eyes.svg" />
+    <link href="gaze-sequencing.css" rel="stylesheet" />
+    <script src="gaze-sequencing.js" defer></script>
+</head>
+
+<body>
+    <div>
+        <!-- ===========================================================
+             Title, Subtitle, Authors
+        ============================================================ -->
+        <div>
+            <h1 class="title">
+                <span class="title-name">Active Visual Fixation</span> for<br>
+                Precise Manipulation without Wrist Cameras
+            </h1>
+        </div>
+
+        <!-- ===========================================================
+             TL;DR + Teaser video
+        ============================================================ -->
+        <div class="section base-row add-top-padding teaser-section">
+            <h1 class="tldr">
+                <b>TL;DR</b>: Policies with active stereo gaze match or exceed wrist camera setups in performance
+                <!-- TL;DR</b>: Actively fixating stereo camera >= ego + wrist cameras -->
+            </h1>
+            <video id="main-video" controls muted loop playsinline preload="none" width="1920" height="1080" style="aspect-ratio: 1920 / 1080; height: auto;" poster="data/web-posters/teaser.webp">
+                <source id="mp4" type="video/mp4" data-src="data/web-video/teaser.mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <!-- ===========================================================
+             Real-world results grid
+        ============================================================ -->
+        <div id="section-index-start" aria-hidden="true"></div>
+        <div class="section base-row add-top-padding">
+            <div style="width: 100%;">
+                <!-- <h1>Overview</h1> -->
+                <h1>Do robots need wrist cameras?</h1>
+                <div class="paragraph-with-sidenote">
+                    <p class="paragraph">
+                        Behavior cloning systems today overwhelmingly rely on wrist cameras for fine-grained manipulation. Their high-resolution gripper-centric observations
+                        improve precision and spatial reasoning via a sort of <b>physical attention</b> where it matters, enabling much better performance than ego or exo-centric views alone.
+                        In this work we explore an alternative method of physical attention inspired by the human visual system; policies which use <b>active gaze</b>
+                        to look at what matters during task execution.
+                    </p>
+
+                    <p class="paragraph">
+                        Active Visual Fixation (AVF) can carry out precise, multi-step tasks like capping a marker, zipping a bag, or inserting a straw, all from a single ego-centric perspective.
+                        All policies below are single-task and trained from scratch on less than an hour of teleop data.
+                    </p>
+                </div>
+            </div>
+
+            <div class="carousel-container real-results-carousel-container" role="region" aria-label="Seven autonomous manipulation results">
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="real-results-carousel">
+                        <div class="carousel-slide current-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Marker task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_02_marker.webp?v=843fe44df6ac">
+                                    <source data-src="data/web-video/results-av1/result_02_marker.mp4?v=e384f6d51773" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_02_marker.mp4?v=c6cf91c6be88" type="video/mp4">
+                                </video>
+                                <figcaption>Cap marker, place in bag, zip bag</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Toaster task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_06_toaster.webp?v=f10dfcf9d96d">
+                                    <source data-src="data/web-video/results-av1/result_06_toaster.mp4?v=43c119fcc258" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_06_toaster.mp4?v=119b0e500ebd" type="video/mp4">
+                                </video>
+                                <figcaption>Open toaster, extract pan, close toaster</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Wrench task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_07_wrench.webp?v=eb269eaa0815">
+                                    <source data-src="data/web-video/results-av1/result_07_wrench.mp4?v=3cd323e6e197" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_07_wrench.mp4?v=6051cec9e0e5" type="video/mp4">
+                                </video>
+                                <figcaption>Open toolbox, extract wrench</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Boba task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_01_boba.webp?v=32ca1c4ddbcd">
+                                    <source data-src="data/web-video/results-av1/result_01_boba.mp4?v=00fbfcd97b58" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_01_boba.mp4?v=8e23c793b668" type="video/mp4">
+                                </video>
+                                <figcaption>Insert boba straw, place on coaster</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Tea task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_05_tea.webp?v=5794ea56c140">
+                                    <source data-src="data/web-video/results-av1/result_05_tea.mp4?v=57b6a74c248e" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_05_tea.mp4?v=8ba465a779d4" type="video/mp4">
+                                </video>
+                                <figcaption>Pick up teabag, put in cup</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Tape task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_04_tape.webp?v=7b830dc42f4c">
+                                    <source data-src="data/web-video/results-av1/result_04_tape.mp4?v=27be56d116f5" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_04_tape.mp4?v=0f99a2cfd8e9" type="video/mp4">
+                                </video>
+                                <figcaption>Pick tape, handover, place tape</figcaption>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="results-grid-item">
+                                <video loop muted playsinline preload="none" aria-label="Pot task rollout" width="1600" height="900" style="aspect-ratio: 1600 / 900; height: auto;" data-poster="data/web-posters/posters/result_03_pot.webp?v=73881936c68d">
+                                    <source data-src="data/web-video/results-av1/result_03_pot.mp4?v=4605aa2bb773" type="video/mp4; codecs=&quot;av01.0.09M.10&quot;">
+                                    <source data-src="data/web-video/results-sdr/result_03_pot.mp4?v=2e564c182342" type="video/mp4">
+                                </video>
+                                <figcaption>Pick pot lid, place on pot</figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-gallery-footer">
+                    <p class="carousel-caption">All videos at 1× speed · Autonomous</p>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="real-results-carousel" aria-label="Previous rollout">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="real-results-carousel" aria-label="Next rollout">→</button>
+                    </div>
+                </div>
+                <div class="carousel-nav results-filmstrip" aria-label="Choose a task rollout">
+                    <button type="button" class="results-thumbnail current-slide" data-slide="0" aria-label="Show Marker rollout" aria-pressed="true">
+                        <img src="data/web-posters/thumbnails/result_02_marker.webp?v=af43e18b5deb" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Marker</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="1" aria-label="Show Toaster rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_06_toaster.webp?v=f9ec85865d4b" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Toaster</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="2" aria-label="Show Wrench rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_07_wrench.webp?v=eac3ac97ac20" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Wrench</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="3" aria-label="Show Boba rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_01_boba.webp?v=659d247640b6" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Boba</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="4" aria-label="Show Tea rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_05_tea.webp?v=6735de5dac06" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Tea</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="5" aria-label="Show Tape rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_04_tape.webp?v=3c08a51cda4d" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Tape</span>
+                    </button>
+                    <button type="button" class="results-thumbnail" data-slide="6" aria-label="Show Pot rollout" aria-pressed="false">
+                        <img src="data/web-posters/thumbnails/result_03_pot.webp?v=facb52bf63cd" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                        <span>Pot</span>
+                    </button>
+                </div>
+            </div>
+
+            <div style="width: 100%;">
+                <!-- Abridged takeaway before the method section; full results live in Experiments below -->
+                <aside class="takeaway-callout" aria-label="Key takeaway">
+                    <div class="takeaway-text">
+                        <p class="takeaway-statement">Active gaze from a single stereo camera matches wrist-camera performance.</p>
+                        <p class="takeaway-detail">Across 640 real-world trials, we compare Active Visual Fixation (AVF) with ego + wrist camera policies and passive stereo policies trained on the same demonstrations. Every one of our trials is browsable in the <a href="viewer/">Eval Browser</a>.</p>
+                        <p class="takeaway-detail takeaway-experiments"><a href="#experiments">See experiments and full results →</a></p>
+                    </div>
+                    <figure class="takeaway-figure">
+                        <img src="images/figure_takeaway.svg" alt="Average real-world success rate: No Gaze 27%, Ego plus Wrist 52%, AVF 67%, over 640 trials" width="260" height="170" loading="lazy" decoding="async" />
+                    </figure>
+                </aside>
+
+                <h3>Stereo policies with active gaze</h3>
+                <div class="carousel-container policy-carousel-container" style="margin-top: 12px;">
+                    <div class="carousel-track-container">
+                        <!-- Slide order must match the results grid above, so "the same
+                             rollouts from the policy's perspective" lines up task-for-task:
+                             marker, toaster, wrench, boba, tea, tape, pot. -->
+                        <div class="carousel-track" id="policy-carousel">
+                            <div class="carousel-slide current-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_marker.webp?v=d69b57f97d16">
+                                    <source data-src="data/web-video/policy_marker.mp4?v=1676252c089c" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_toaster.webp?v=c7122ecd6c18">
+                                    <source data-src="data/web-video/policy_toaster.mp4?v=0f33a507957a" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_wrench.webp?v=fca024d06d4d">
+                                    <source data-src="data/web-video/policy_wrench.mp4?v=58c91486e529" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_boba.webp?v=6e0b84cec33f">
+                                    <source data-src="data/web-video/policy_boba.mp4?v=c45647bf2e82" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_tea.webp?v=73890816f4c8">
+                                    <source data-src="data/web-video/policy_tea.mp4?v=b157aa327f28" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_tape.webp?v=4cb9c0c8635f">
+                                    <source data-src="data/web-video/policy_tape.mp4?v=777d7edb7fdb" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="carousel-slide">
+                                <video loop muted playsinline style="width: 100%; aspect-ratio: 2160 / 1080; height: auto;" preload="none" width="2160" height="1080" data-poster="data/web-posters/posters/policy_pot.webp?v=abd75c02418c">
+                                    <source data-src="data/web-video/policy_pot.mp4?v=ca30e5c8681c" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="results-gallery-footer">
+                    <p class="carousel-caption">Watch how the policy looks around as it completes tasks. All videos 1x speed.</p>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="policy-carousel" aria-label="Previous slide">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="policy-carousel" aria-label="Next slide">→</button>
+                    </div>
+                </div>
+
+                    <div class="carousel-nav results-filmstrip" aria-label="Choose a task rollout">
+                        <button type="button" class="results-thumbnail current-slide" data-slide="0" aria-label="Show Marker eye behavior" aria-pressed="true">
+                            <img src="data/web-posters/thumbnails/result_02_marker.webp?v=af43e18b5deb" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Marker</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="1" aria-label="Show Toaster eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_06_toaster.webp?v=f9ec85865d4b" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Toaster</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="2" aria-label="Show Wrench eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_07_wrench.webp?v=eac3ac97ac20" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Wrench</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="3" aria-label="Show Boba eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_01_boba.webp?v=659d247640b6" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Boba</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="4" aria-label="Show Tea eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_05_tea.webp?v=6735de5dac06" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Tea</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="5" aria-label="Show Tape eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_04_tape.webp?v=3c08a51cda4d" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Tape</span>
+                        </button>
+                        <button type="button" class="results-thumbnail" data-slide="6" aria-label="Show Pot eye behavior" aria-pressed="false">
+                            <img src="data/web-posters/thumbnails/result_03_pot.webp?v=facb52bf63cd" alt="" loading="lazy" width="240" height="135" decoding="async" />
+                            <span>Pot</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="paragraph-with-sidenote policy-rollout-intro">
+                    <p class="paragraph">
+                        When most people think of active vision, they think of <b>information seeking</b> behaviors like moving your neck to get a better viewpoint.
+                        In this work we study a type of active vision more akin to <b>information filtering</b>.
+                        Given an already well-observable workspace, can active vision improve manipulation performance by focusing compute, attention, and representation capacity towards important parts of the scene?
+                         We borrow the biological term for this type of active vision: <i>fixation</i>.
+                    </p>
+                </div>
+
+                <div class="paragraph-with-sidenote policy-rollout-intro">
+                    <p class="paragraph">
+                        The robot learns to coordinate its gaze with a two-stage reinforcement learning pipeline, <b>no gaze demonstrations required</b>!
+                        We first train a semantic gaze module, then use it to learn a gaze sequencing policy which directly optimizes BC accuracy as its reward. The eye motion shown here was exactly what the policy looked at during execution. Concentric rectangles illustrate the model's <i>foveated</i><sup class="footnote-marker"><a class="footnote-ref" id="foveation-ref" href="#foveation-note" aria-label="Footnote">1</a></sup> image processing, which allocates
+                        high resolution image tokens towards the center.
+                         <!-- This behavior was <i>never supervised</i> and emerged through RL. -->
+                    </p>
+                    <aside class="sidenote" id="foveation-note" role="note">
+                        <a class="sidenote-number" href="#foveation-ref" aria-label="Back to footnote">1</a> Foveation is a property prevalant in biological vision where organisms' retinas have very high
+                        angular resolution in the center, and very poor resolution in the periphery.
+                    </aside>
+                </div>
+
+
+            </div>
+        </div>
+
+
+        <!-- ===========================================================
+             "How it works" — manipulation architecture, then learned gaze
+        ============================================================ -->
+        <div class="section base-row add-top-padding">
+
+
+            <div class="separator"></div>
+            <h1>How it works</h1>
+            <h2 id="policy-architecture">A stereo policy centered on fixation</h2>
+            <p class="paragraph">
+                Our gripper policy combines foveated stereo views with the robot's state to predict a chunk of bimanual actions.
+                Both gripper poses and predicted actions are expressed relative to fixation, while multi-scale image crops preserve detail at the center and context in the periphery.
+                We use a standard ACT-style transformer decoder trained with a regression objective.
+                We opt for regression for its training speed and suitability for our high-quality, non-diverse data.
+            </p>
+
+            <figure class="policy-architecture" aria-label="Gripper policy architecture">
+                <div class="policy-architecture-flow">
+                    <div class="policy-inputs">
+                        <div class="policy-stereo">
+                            <h3>Fixated stereo views</h3>
+                            <img src="images/policy-stereo-inputs.svg" width="280" height="152" alt="Left and right eye views, each represented by a pyramid of centered crops with more detail near fixation." loading="lazy" decoding="async" />
+                            <div class="policy-encoder">
+                                <strong>Frozen DINOv3</strong>
+                                <span>Multi-scale image tokens</span>
+                            </div>
+                        </div>
+                        <div class="policy-state">
+                            <strong>Gripper &amp; gaze state</strong>
+                            <span>Proprioception, gaze depth and direction</span>
+                        </div>
+                        <div class="policy-target">Target object <span>“yellow tape”</span></div>
+                    </div>
+                    <span class="policy-flow-arrow" aria-hidden="true"></span>
+                    <div class="policy-network">
+                        <h3>Gripper policy</h3>
+                        <p>Transformer decoder</p>
+                        <div class="policy-attention">
+                            <span>Image, state &amp; goal tokens</span>
+                            <svg viewBox="0 0 160 114" role="img" aria-label="Image, state, and target tokens interact with action-query tokens through cross-attention.">
+                                <g stroke="#aabfce" stroke-width="1" fill="none">
+                                    <path d="M14 22V39H146V22M47 22V39M80 22V39M113 22V39M80 39V48"/>
+                                    <path d="M80 66V76M47 92V76H113V92M80 76V92"/>
+                                    <path d="M77 45L80 48L83 45M77 69L80 66L83 69"/>
+                                </g>
+                                <g stroke-width="1">
+                                    <rect x="4" y="2" width="20" height="20" rx="3" fill="#b8d8c7" stroke="#96bca8"/>
+                                    <rect x="37" y="2" width="20" height="20" rx="3" fill="#b8d8c7" stroke="#96bca8"/>
+                                    <rect x="70" y="2" width="20" height="20" rx="3" fill="#d7dde1" stroke="#b6c0c7"/>
+                                    <rect x="103" y="2" width="20" height="20" rx="3" fill="#d7dde1" stroke="#b6c0c7"/>
+                                    <rect x="136" y="2" width="20" height="20" rx="3" fill="#f0cbb5" stroke="#dab29a"/>
+                                    <rect x="37" y="92" width="20" height="20" rx="3" fill="#a2bfd7" stroke="#85a7c2"/>
+                                    <rect x="70" y="92" width="20" height="20" rx="3" fill="#a2bfd7" stroke="#85a7c2"/>
+                                    <rect x="103" y="92" width="20" height="20" rx="3" fill="#a2bfd7" stroke="#85a7c2"/>
+                                </g>
+                                <text x="80" y="61" text-anchor="middle" fill="#57738b" font-size="13">Cross-attention</text>
+                            </svg>
+                            <span>Action queries</span>
+                        </div>
+                    </div>
+                    <span class="policy-flow-arrow" aria-hidden="true"></span>
+                    <div class="policy-output">
+                        <h3>Fixation-relative action chunk</h3>
+                        <img src="images/policy-fixation-frame.svg" width="460" height="350" alt="The physical stereo camera faces straight ahead, while the fixation frame turns toward the tape from an origin between the eyes. Future gripper poses are represented in this virtual frame. A fixed world frame and the fixation target are labeled separately; one arm is illustrated using the URDF wrist and finger geometry." loading="lazy" decoding="async" />
+                        <span class="policy-frame-label">Bimanual SE(3) poses + gripper positions</span>
+                    </div>
+                </div>
+                <figcaption class="carousel-caption">Observed gripper poses and the entire predicted action chunk share the current fixation frame. Actions are transformed back to robot coordinates for execution.</figcaption>
+            </figure>
+
+            <p class="paragraph policy-gaze-transition">
+                But how does the robot know where to look? We learn this in two stages: first a gaze policy that fixates on a requested object,
+                then a target selector that chooses <i>what</i> to look at during manipulation. Both learn through RL without gaze demonstrations.
+            </p>
+
+            <h2 id="simulated-gaze">Simulating gaze for RL training</h2>
+
+            <figure class="gym-spatial gym-spatial--inline" id="gym-spatial" aria-label="Virtual gaze from a fixed stereo pair">
+              <div class="gym-spatial-layout">
+                <section class="gym-spatial-inputs" aria-label="Original recorded stereo images">
+                  <p class="gym-spatial-section-label">Stereo images</p>
+                  <div class="gym-spatial-sources">
+                    <div><img src="images/simulated-gaze/left-sensor.webp" width="800" height="600" loading="lazy" decoding="async" alt="Original left stereo image showing yellow and grey tape"><span>L</span></div>
+                    <div><img src="images/simulated-gaze/right-sensor.webp" width="800" height="600" loading="lazy" decoding="async" alt="Original right stereo image showing yellow and grey tape"><span>R</span></div>
+                  </div>
+                </section>
+                <div class="gym-spatial-projection-arrow" aria-hidden="true"><i></i></div>
+                <section class="gym-spatial-world" aria-label="Spatial view synthesis">
+                  <p class="gym-spatial-section-label">Spherical projection</p>
+                  <canvas id="gym-spatial-scene" width="1200" height="840" role="img" aria-label="Head-on schematic view: the robot’s right eye is on the left, and its left eye is on the right. Spherical image patches connect to hollow cylinders representing grey and yellow tape."></canvas>
+                  <div class="gym-spatial-topline"><span class="gym-spatial-key"><i></i> sampled view <i></i> fixation</span></div>
+                </section>
+                <section class="gym-spatial-outputs" aria-label="Fixation-centered stereo crops">
+                  <p class="gym-spatial-section-label">Rendered perspective</p>
+                  <div class="gym-spatial-crop"><canvas id="gym-spatial-left" width="360" height="270" role="img" aria-label="Left virtual view, sampled from the fixed left image"></canvas><span>L</span></div>
+                  <div class="gym-spatial-crop"><canvas id="gym-spatial-right" width="360" height="270" role="img" aria-label="Right virtual view, sampled from the fixed right image"></canvas><span>R</span></div>
+                </section>
+              </div>
+              <p class="gym-spatial-status" id="gym-spatial-status" role="status">Loading the recorded stereo pair…</p>
+            </figure>
+
+            <p class="paragraph">
+            We simulate eye gaze by rendering stereo video through a spherical projection: based on the calibrated image and stereo geometry
+            we can exactly render what two physical eyes would have seen, modulo missing data outside the image. This allows us to train RL policies
+            to control gaze based on a variety of rewards, detailed below.
+            </p>
+            <h2>Learning goal-conditioned gaze</h2>
+            <div class="gaze-trajectory-comparison">
+                <div class="gaze-trajectory-item">
+                    <video loop muted playsinline preload="none" aria-label="Gaze policy trajectory rollout for yellow tape" width="610" height="648" style="aspect-ratio: 610 / 648; height: auto;">
+                        <source type="video/mp4" data-src="images/yellow_scene.mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <span class="gaze-trajectory-label">Conditioned on yellow tape</span>
+                </div>
+                <div class="gaze-trajectory-item">
+                    <video loop muted playsinline preload="none" aria-label="Gaze policy trajectory rollout for gray tape" width="610" height="648" style="aspect-ratio: 610 / 648; height: auto;">
+                        <source type="video/mp4" data-src="images/gray_scene.mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <span class="gaze-trajectory-label">Conditioned on gray tape</span>
+                </div>
+            </div>
+            <p class="carousel-caption gaze-trajectory-caption">Gaze induced by conditioning on yellow vs gray tape.
+                3D visualization done with simulated data, but the policy is trained on real data. The red dot represents the current fixation point,
+                which is controlled by the RL agent in 3D. Foveated viewpoints are rendered centered on this point.
+            </p>
+            <div class="goal-conditioned-intro">
+                <figure id="gaze-transformer" class="gaze-policy-wrap-figure">
+                    <!-- Editable gaze transformer; animation is scoped to this figure. -->
+                    <svg id="gt-gaze-figure" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1446 1028" width="1446" height="1028" role="img" aria-labelledby="gt-figure-title gt-figure-description">
+                      <title id="gt-figure-title">Goal-conditioned gaze transformer</title>
+                      <desc id="gt-figure-description">Two foveated stereo views, eye proprioception, and a target prompt feed a gaze transformer through MLP projection. The transformer outputs delta theta, delta phi, and delta distance to control two eyes and a 3D fixation point. The moving fixation point is labeled Depth during radial motion and Direction during angular motion.</desc>
+                      <defs>
+                        <style>
+                          #gt-gaze-figure .diagram-label { font-family: Avenir, "Avenir Next", Arial, sans-serif; font-weight: 400; fill: #050505; font-size: 46px; }
+                          #gt-gaze-figure .math { font-family: "Times New Roman", Times, serif; font-style: italic; fill: #000; }
+                          #gt-gaze-figure .flow-arrow { fill: none; stroke: #606060; stroke-width: 4; marker-end: url(#gt-arrow-gray); }
+                          #gt-gaze-figure .policy-fill { fill: #b6daca; }
+                          #gt-gaze-figure .output-border { stroke: #9b8bbb; }
+                          #gt-gaze-figure .ray { stroke: #cd7061; stroke-width: 7; stroke-dasharray: 8 7; fill: none; }
+                          #gt-gaze-figure .fixation-fill { fill: #cd7061; }
+                          #gt-gaze-figure .prompt-border { stroke: #fcc4a7; }
+                          #gt-gaze-figure .layer { transition: filter 200ms; }
+                          #gt-gaze-figure .output-key { fill: #f8f7fa; stroke: #dedbe5; stroke-width: 2; transition: fill 220ms, stroke 220ms; }
+                          #gt-gaze-figure .output-key.active { fill: #ede6fb; stroke: #9b83c0; }
+                          #gt-gaze-figure .motion-caption { font-family: Avenir, "Avenir Next", Arial, sans-serif; font-size: 36px; fill: #5e6f65; transition: fill 220ms; }
+                          #gt-gaze-figure .motion-caption.active { fill: #8265aa; }
+                          #gt-gaze-figure .motion-guide { stroke: #b6a4cd; stroke-width: 2.5; fill: none; opacity: 0; transition: opacity 180ms; }
+                          #gt-gaze-figure .motion-guide.active { opacity: .8; }
+                        </style>
+                        <filter id="gt-paper-shadow" x="-30%" y="-50%" width="160%" height="220%">
+                          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity=".12"/>
+                        </filter>
+                        <filter id="gt-plane-shadow" x="-50%" y="-70%" width="200%" height="260%">
+                          <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity=".16"/>
+                        </filter>
+                        <filter id="gt-key-shadow" x="-60%" y="-60%" width="220%" height="240%">
+                          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".10"/>
+                        </filter>
+                        <linearGradient id="gt-plane" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stop-color="#bfc5c1"/>
+                          <stop offset="1" stop-color="#d3d8d4"/>
+                        </linearGradient>
+                        <linearGradient id="gt-mount" x1="0" y1="0" x2="0" y2="1">
+                          <stop stop-color="#343535"/><stop offset=".5" stop-color="#222323"/><stop offset="1" stop-color="#171818"/>
+                        </linearGradient>
+                        <linearGradient id="gt-barrel" x1="0" y1="0" x2="0" y2="1">
+                          <stop stop-color="#181919"/><stop offset=".35" stop-color="#353636"/><stop offset=".7" stop-color="#222323"/><stop offset="1" stop-color="#111212"/>
+                        </linearGradient>
+                        <radialGradient id="gt-lens" cx=".32" cy=".23" r=".8">
+                          <stop stop-color="#8a8b8a"/><stop offset=".2" stop-color="#494a49"/><stop offset=".48" stop-color="#282929"/><stop offset="1" stop-color="#171818"/>
+                        </radialGradient>
+                        <marker id="gt-arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                          <path d="M0 0 10 5 0 10Z" fill="#606060"/>
+                        </marker>
+                        <marker id="gt-arrow-black" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+                          <path d="M0 0 10 5 0 10Z" fill="#000"/>
+                        </marker>
+                        <marker id="gt-arrow-white" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                          <path d="M0 0 10 5 0 10Z" fill="#fff"/>
+                        </marker>
+                        <marker id="gt-arrow-guide" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse">
+                          <path d="M0 0 10 5 0 10Z" fill="#b6a4cd"/>
+                        </marker>
+                        <!-- A small tape ring, shared across the six independently editable planes. -->
+                        <g id="gt-tape">
+                          <ellipse cx="3" cy="3" rx="29" ry="6" fill="#7d7762" opacity=".24"/>
+                          <ellipse rx="24" ry="5.5" fill="#ad9345"/>
+                          <ellipse cy="-1" rx="19" ry="3.4" fill="#77786c"/>
+                          <ellipse cy="0" rx="16.5" ry="2.4" fill="#cdd1c9"/>
+                          <path d="M-22-1C-14-6 13-6 23-1" fill="none" stroke="#d0bd7b" stroke-width="1.6"/>
+                        </g>
+                        <g id="gt-stereo-pyramid">
+                          <g data-plane="wide" filter="url(#gt-plane-shadow)">
+                            <path d="M-97 267H96L123 343H-123Z" fill="url(#gt-plane)" stroke="#929793" stroke-width="4"/>
+                            <use href="#gt-tape" transform="translate(0 304)"/>
+                          </g>
+                          <g data-plane="middle" filter="url(#gt-plane-shadow)">
+                            <path d="M-67 220H65L88 293H-89Z" fill="url(#gt-plane)" stroke="#929793" stroke-width="4"/>
+                            <use href="#gt-tape" transform="translate(0 257)"/>
+                          </g>
+                          <g data-plane="foveal" filter="url(#gt-plane-shadow)">
+                            <path d="M-39 194H37L56 251H-57Z" fill="url(#gt-plane)" stroke="#929793" stroke-width="4"/>
+                            <use href="#gt-tape" transform="translate(0 225)"/>
+                          </g>
+                        </g>
+                        <!-- Native vector camera: mounting plate, cooling fins, barrel, and lens. -->
+                        <g id="gt-camera-base">
+                          <path d="M68-63 123-44 124 13 70 32 49 22 48-45Z" fill="#242525" stroke="#151616" stroke-width="2"/>
+                          <g stroke="#0f1010" stroke-width="7">
+                            <path d="m52-39 59-19m-57 28 58-19m-56 28 57-19m-55 28 56-19m-55 28 56-19m-57 29 58-20m-60 29 61-20m-63 28 64-19"/>
+                          </g>
+                          <g stroke="#3b3c3c" stroke-width="2" opacity=".75">
+                            <path d="m52-41 59-19m-57 28 58-19m-56 28 57-19m-55 28 56-19m-55 28 56-19m-57 29 58-20m-60 29 61-20m-63 28 64-19"/>
+                          </g>
+                        </g>
+                        <g id="gt-camera-eye">
+                          <path d="M1-45 50-50C80-48 94 5 66 28L27 51Z" fill="url(#gt-barrel)" stroke="#141515" stroke-width="2"/>
+                          <g fill="none" stroke="#121313" stroke-width="2.5">
+                            <path d="M40-48C68-41 81 9 57 33"/>
+                            <path d="M29-47C57-40 70 13 46 38"/>
+                            <path d="M19-46C47-39 60 17 36 42"/>
+                          </g>
+                          <ellipse cx="11" cy="3" rx="30" ry="49" transform="rotate(-16 11 3)" fill="#303131" stroke="#171818" stroke-width="3"/>
+                          <ellipse cx="6" cy="3" rx="25" ry="44" transform="rotate(-16 6 3)" fill="url(#gt-lens)" stroke="#202121" stroke-width="2"/>
+                          <path d="M-13-29Q-28-4-10 31" fill="none" stroke="#737575" stroke-opacity=".17" stroke-width="2"/>
+                        </g>
+                      </defs>
+
+                      <g id="gt-stereo-inputs" class="layer" transform="translate(0 -40)" aria-label="Foveated stereo views">
+                        <text class="diagram-label" x="391" y="147" text-anchor="middle">Foveated stereo</text>
+                        <use href="#gt-stereo-pyramid" transform="translate(260 0)"/>
+                        <use href="#gt-stereo-pyramid" transform="translate(522 0)"/>
+                      </g>
+                      <g id="gt-eye-state" class="layer" transform="translate(0 -40)">
+                        <text class="diagram-label" x="741" y="147" text-anchor="middle">Eye Proprio</text>
+                        <g fill="white" stroke="#000" stroke-width="4.2">
+                          <ellipse cx="703" cy="200" rx="32" ry="33"/>
+                          <ellipse cx="778" cy="200" rx="32" ry="33"/>
+                        </g>
+                        <g id="gt-pupils" fill="#000">
+                          <circle cx="715" cy="200" r="13.5"/><circle cx="790" cy="200" r="13.5"/>
+                          <g fill="white"><circle cx="720" cy="195" r="4"/><circle cx="795" cy="195" r="4"/></g>
+                        </g>
+                        <text class="math" x="741" y="285" font-size="60" text-anchor="middle">(θ, ϕ, d)</text>
+                      </g>
+                      <g id="gt-goal-prompt" class="layer" transform="translate(0 -40)">
+                        <text class="diagram-label" x="1016" y="147" text-anchor="middle">Prompt</text>
+                        <rect class="prompt-border" x="848" y="163" width="348" height="83" rx="23" fill="none" stroke-width="3" stroke-dasharray="3 5"/>
+                        <text id="gt-prompt-text" class="diagram-label" x="1022" y="219" text-anchor="middle" style="font-size:42px;fill:#606060">“a yellow tape”</text>
+                      </g>
+                      <g id="gt-projection-label">
+                        <text class="diagram-label" x="1370" y="344" text-anchor="end" style="font-size:36px;fill:#5e6f65">MLP projection</text>
+                      </g>
+                      <g id="gt-policy-block" class="layer">
+                        <rect class="policy-fill" x="64" y="375" width="1318" height="164" rx="25" stroke="white" stroke-width="2" filter="url(#gt-paper-shadow)"/>
+                        <text id="gt-policy-text" class="diagram-label" x="723" y="477" font-size="60" style="font-size:60px" text-anchor="middle">Gaze Transformer</text>
+                      </g>
+                      <g id="gt-input-connections">
+                        <path id="gt-left-flow" class="flow-arrow" d="M260 320V372"/>
+                        <path id="gt-right-flow" class="flow-arrow" d="M522 320V372"/>
+                        <path id="gt-state-flow" class="flow-arrow" d="M742 264V372"/>
+                        <path id="gt-prompt-flow" class="flow-arrow" d="M1022 213V372"/>
+                        <path id="gt-output-flow" class="flow-arrow" d="M372 548V641"/>
+                      </g>
+                      <g id="gt-motion-outputs" class="layer">
+                        <rect class="output-border" x="96" y="655" width="552" height="146" rx="19" fill="none" stroke-width="3"/>
+                        <g filter="url(#gt-key-shadow)">
+                          <rect id="gt-theta-key" class="output-key" x="122" y="681" width="132" height="92" rx="11"/>
+                          <rect id="gt-phi-key" class="output-key" x="306" y="681" width="132" height="92" rx="11"/>
+                          <rect id="gt-depth-key" class="output-key" x="490" y="681" width="132" height="92" rx="11"/>
+                        </g>
+                        <g class="math" font-size="88" text-anchor="middle">
+                          <text x="188" y="755"><tspan font-style="normal">Δ</tspan>θ</text>
+                          <text x="372" y="752"><tspan font-style="normal">Δ</tspan>ϕ</text>
+                          <text x="556" y="754"><tspan font-style="normal">Δ</tspan>d</text>
+                        </g>
+                        <text id="gt-direction-caption" class="motion-caption" x="280" y="846" text-anchor="middle">Direction</text>
+                        <text id="gt-depth-caption" class="motion-caption" x="556" y="846" text-anchor="middle">Depth</text>
+                      </g>
+                      <g id="gt-gaze-illustration" transform="translate(-100 -5)">
+                      <g id="gt-motion-guides" aria-hidden="true">
+                        <path id="gt-depth-guide" class="motion-guide" marker-start="url(#gt-arrow-guide)" marker-end="url(#gt-arrow-guide)"/>
+                        <path id="gt-direction-guide" class="motion-guide" marker-start="url(#gt-arrow-guide)" marker-end="url(#gt-arrow-guide)"/>
+                      </g>
+                      <g id="gt-gaze-rays">
+                        <path id="gt-left-ray" class="ray" d="M920 910 1074 716"/>
+                        <path id="gt-right-ray" class="ray" d="M920 910 1305 792"/>
+                      </g>
+                      <g id="gt-stereo-hardware" class="layer">
+                        <path d="M1146 615Q1149 612 1155 615L1439 718Q1443 719 1443 727L1446 796Q1446 805 1438 803L1150 700Q1144 698 1144 690Z" fill="url(#gt-mount)" stroke="#171818" stroke-width="3"/>
+                        <path d="M1152 622 1435 725 1438 793" fill="none" stroke="#454646" stroke-width="3" opacity=".7"/>
+                        <path d="m1234 648 5 83m11-77 6 82m-36-93 5 82" fill="none" stroke="#101111" stroke-width="3"/>
+                        <ellipse cx="1435" cy="736" rx="3.5" ry="7" fill="#111"/>
+                        <ellipse cx="1439" cy="785" rx="3.5" ry="7" fill="#111"/>
+                        <use href="#gt-camera-base" transform="translate(1075 695)"/>
+                        <use href="#gt-camera-base" transform="translate(1296 777)"/>
+                        <g id="gt-left-eye-motion"><use href="#gt-camera-eye" transform="translate(1075 695)"/></g>
+                        <g id="gt-right-eye-motion"><use href="#gt-camera-eye" transform="translate(1296 777)"/></g>
+                      </g>
+                      <!-- Ray endpoints sit on the lens faces, as in the source. -->
+                      <g id="gt-ray-tips" class="ray">
+                        <path id="gt-left-ray-tip" d="m1067 720 9-5"/><path id="gt-right-ray-tip" d="m1297 795 10-3"/>
+                      </g>
+                      <g id="gt-fixation-point">
+                        <circle id="gt-fixation-dot" class="fixation-fill" cx="920" cy="910" r="13"/>
+                      </g>
+                      <text id="gt-motion-label" class="motion-label" x="930" y="994" text-anchor="middle">Direction · depth</text>
+                      </g>
+                    </svg>
+                </figure>
+                <p class="paragraph">
+                    We first train a per-task gaze controller that continuously servos the 2 eyes to fixate on a target object in 3D.
+                    The policy uses a transformer decoder architecture. It takes in foveated input views, the current eye proprioception, and a goal to look at, and outputs eye motion.
+                    We train it with PPO with a dense reward derived from extracting 3D object locations with foundation models and supervising with Euclidean error.
+                </p>
+            </div>
+            <!-- TODO: drop clip at data/pretraining.mp4 -->
+            <!-- Hidden until a real video loads, so the missing-source video doesn't
+                 reserve empty space. Auto-reveals once data/pretraining.mp4 is present. -->
+            <video loop muted playsinline style="width: 100%; display: none;" preload="none" onloadeddata="this.style.display=&#x27;&#x27;">
+                <source data-src="data/pretraining.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+
+            <h2 class="gaze-sequencing-heading">Sequencing gaze for manipulation</h2>
+            <p class="paragraph">
+                Once we have a gaze policy that can look at objects of interest, we need to choose <i>what</i> object to look at during each stage of the task.
+                This is also learned via RL, using the BC-RL framework proposed in <a href="https://www.eyerobot.net/">EyeRobot</a>.
+                During this phase, we freeze the goal-conditioned gaze policy and train another RL agent to output a distribution over target objects to look at at each timestep.
+                This <i>target selector</i> is co-trained with the BC gripper policy and rewarded with the BC policy's prediction accuracy.
+            </p>
+            <div class="gaze-sequencing" id="gaze-sequencing">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="seq-arm" stroke="#535d62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 73H48L45 66H17Z" fill="#e5e9eb"/><path d="M29 64L30 48L47 18L75 30L85 23" fill="none" stroke="#626d72" stroke-width="9"/><path d="M29 64L30 48L47 18L75 30L85 23" fill="none" stroke="#fff" stroke-width="5"/>
+<g fill="#fff"><circle cx="30" cy="48" r="5"/><circle cx="47" cy="18" r="5"/><circle cx="75" cy="30" r="4"/></g><path d="M83 18L88 24L96 21M85 27L90 32L98 29" fill="none"/>
+</g>
+<g id="seq-arm-reach" stroke="#535d62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 73H40L37 66H13Z" fill="#e5e9eb"/><path d="M24 64L23 49L33 22L71 20L84 14" fill="none" stroke="#626d72" stroke-width="9"/><path d="M24 64L23 49L33 22L71 20L84 14" fill="none" stroke="#fff" stroke-width="5"/><g fill="#fff"><circle cx="23" cy="49" r="5"/><circle cx="33" cy="22" r="5"/><circle cx="71" cy="20" r="4"/></g><path d="M82 10L87 16L96 13M85 20L90 25L98 22" fill="none"/></g>
+<g id="seq-eyes" fill="#fff" stroke="#535d62" stroke-width="2.5"><ellipse cx="28" cy="42" rx="20" ry="23"/><ellipse cx="75" cy="42" rx="20" ry="23"/><g fill="#303438" stroke="none"><ellipse cx="34" cy="44" rx="10" ry="13"/><ellipse cx="81" cy="44" rx="10" ry="13"/></g><g fill="#fff" stroke="none"><circle cx="37" cy="39" r="4"/><circle cx="84" cy="39" r="4"/></g></g>
+<g id="seq-views" stroke="#929da1" stroke-width="1.8" stroke-linejoin="round"><path d="M9 69L25 24H75L93 69Z" fill="#d4dce0"/><path d="M19 55L34 15H68L82 55Z" fill="#e2e7e8"/><path d="M30 39L42 6H60L71 39Z" fill="#edf0ec"/><g fill="#cfcaab" stroke="#a7a289"><ellipse cx="50" cy="19" rx="7" ry="3"/><ellipse cx="51" cy="41" rx="10" ry="4"/><ellipse cx="52" cy="59" rx="12" ry="4"/></g></g>
+<g id="seq-hand" fill="#f4f7f4" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="-9" y="-19" width="18" height="13" rx="2"/><path d="M-8 -6L-15 3V18H-7V6M8 -6L15 3V18H7V6" fill="none" stroke-width="3"/></g>
+<marker id="seq-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1L9 5L1 9Z" fill="#7c8387"/></marker>
+<marker id="seq-red-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1L9 5L1 9Z" fill="#d56558"/></marker>
+<marker id="seq-green-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1L9 5L1 9Z" fill="#7aaf78"/></marker>
+<marker id="seq-focus-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1L9 5L1 9Z" fill="#527e9c"/></marker></defs></svg><div class="pipeline-controls" role="group" aria-label="Highlight a pipeline">
+<button type="button" data-mode="bc" aria-pressed="true">BC update</button>
+<button type="button" data-mode="rl" aria-pressed="false">RL</button>
+<button type="button" data-mode="gaze" aria-pressed="false">Gaze rollout</button>
+<button type="button" data-mode="all" aria-pressed="false">Overview</button>
+</div><figure aria-labelledby="seq-figure-caption"><p class="scroll-hint" hidden>Swipe to explore the diagram →</p><div class="figure-scroll" tabindex="0" role="region" aria-label="Gaze sequencing diagram; scroll horizontally on small screens"><div class="diagram">
+<svg class="wires" viewBox="0 0 1200 560" aria-hidden="true"><g fill="none" stroke="#7c8387" stroke-width="1.8" stroke-linecap="butt" stroke-linejoin="round">
+<path id="seq-edge-proprio-selector" class="" data-focus="rl" data-role="primary" data-source=".proprio" data-source-side="top" data-target=".selector" data-target-side="left" d="M64 170V118Q64 110 72 110H113" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-proprio-gripper" class="" data-focus="bc" data-role="primary" data-source=".proprio" data-source-side="bottom" data-target=".policy:not(.gaze)" data-target-side="top" d="M64 244V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-selector-object" class="" data-focus="rl" data-role="primary" data-source=".selector" data-source-side="right" data-target=".chosen" data-target-side="left" d="M214 110H244Q252 110 252 118V132Q252 140 260 140H273" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-object-gripper" class="" data-focus="bc" data-role="primary" data-source=".chosen" data-source-side="bottom" data-target=".policy:not(.gaze)" data-target-side="top" d="M338 167V170Q338 178 330 178H124Q116 178 116 186V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-object-gaze" class="" data-focus="gaze" data-role="primary" data-source=".chosen" data-source-side="bottom" data-target=".gaze" data-target-side="top" d="M338 167V170Q338 178 346 178H358Q366 178 366 186V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-observation-gripper" class="" data-focus="bc" data-role="primary" data-source=".observation[data-focus=&quot;bc&quot;]" data-source-side="bottom" data-target=".policy:not(.gaze)" data-target-side="top" d="M214.5 260V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-observation-gaze" class="" data-focus="gaze" data-role="primary" data-source=".observation[data-focus=&quot;gaze&quot;]" data-source-side="bottom" data-target=".gaze" data-target-side="top" d="M469.5 260V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-gripper-prediction" class="" data-focus="bc" data-role="pred" data-source=".policy:not(.gaze)" data-source-side="bottom" data-target=".arm-chunk" data-target-side="top" d="M152 410V435" stroke="#d56558" marker-end="url(#seq-red-arrow)"/>
+<path id="seq-edge-gaze-actions" class="" data-focus="gaze" data-role="primary" data-source=".gaze" data-source-side="bottom" data-target=".gaze-actions" data-target-side="top" d="M430 410V447" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-reward-update" class="" data-focus="rl" data-role="primary" data-source=".equation[data-focus=&quot;rl&quot;]" data-source-side="top" data-target=".update" data-target-side="bottom" d="M695 190V163" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-prediction-bc" class="" data-focus="bc" data-role="pred" data-source=".chunk[data-role=&quot;pred&quot;]" data-source-side="right" data-target=".equation[data-focus=&quot;bc&quot;]" data-target-side="bottom" d="M291 532H698Q706 532 706 524V403" stroke="#d56558" marker-end="url(#seq-red-arrow)"/>
+<path id="seq-edge-demo-bc" class="" data-focus="bc" data-role="truth" data-source=".chunk[data-role=&quot;truth&quot;]" data-source-side="bottom" data-target=".equation[data-focus=&quot;bc&quot;]" data-target-side="bottom" d="M1077 517V539Q1077 547 1069 547H802Q794 547 794 539V403" stroke="#7aaf78" marker-end="url(#seq-green-arrow)"/>
+<path id="seq-edge-bc-supervision" class="focus-only training-return" data-focus="bc" data-role="primary" data-source=".equation[data-focus=&quot;bc&quot;]" data-source-side="left" data-target=".policy:not(.gaze)" data-target-side="top" d="M594 362H584Q576 362 576 354V274Q576 266 568 266H250V277" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-prediction-reward" class="focus-only" data-focus="rl" data-role="pred" data-source=".chunk[data-role=&quot;pred&quot;]" data-source-side="right" data-target=".equation[data-focus=&quot;rl&quot;]" data-target-side="bottom" d="M291 532H568Q576 532 576 524V290Q576 282 584 282H652Q660 282 660 274V259" stroke="#d56558" marker-end="url(#seq-red-arrow)"/>
+<path id="seq-edge-demo-reward" class="focus-only" data-focus="rl" data-role="truth" data-source=".chunk[data-role=&quot;truth&quot;]" data-source-side="bottom" data-target=".equation[data-focus=&quot;rl&quot;]" data-target-side="bottom" d="M1077 517V539Q1077 547 1069 547H885Q877 547 877 539V290Q877 282 869 282H798Q790 282 790 274V259" stroke="#7aaf78" marker-end="url(#seq-green-arrow)"/>
+<path id="seq-edge-selector-training" class="focus-only training-return" data-focus="rl" data-role="primary" data-source=".update" data-source-side="top" data-target=".selector" data-target-side="left" d="M695 71V20Q695 12 687 12H56Q48 12 48 20V67Q48 75 56 75H113" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+<path id="seq-edge-gaze-render" class="focus-only" data-focus="gaze" data-role="primary" data-source=".gaze-actions" data-source-side="right" data-target=".observation[data-focus=&quot;gaze&quot;]" data-target-side="top" d="M562 483H568Q576 483 576 475V176Q576 168 568 168H477.5Q469.5 168 469.5 176V187" stroke="#7c8387" marker-end="url(#seq-arrow)"/>
+</g><path d="M890 62V503" stroke="#e8eceb" stroke-width="1"/></svg>
+<div class="node label" data-focus="rl" data-role="primary" style="--x:88;--y:25;--w:162;--h:30" >Target Selector</div>
+<div class="node selector" data-focus="rl" data-role="primary" style="--x:122;--y:65;--w:86;--h:90" ><i></i><i></i><i></i><span class="status" role="img" aria-label="Trainable">🔥</span></div>
+<div class="node proprio" data-focus="bc rl" data-role="primary" style="--x:16;--y:176;--w:96;--h:62" >Arm<svg class="" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-arm"/></svg><br>Proprio</div>
+<div class="node targets" data-focus="bc gaze rl" data-role="primary" style="--x:282;--y:77;--w:168;--h:84" ><div>“a grey tape”</div><div class="chosen">“a yellow tape”</div></div>
+<div class="node histogram" data-focus="rl" data-role="primary" style="--x:459;--y:76;--w:103;--h:80" role="img" aria-label="Target probabilities favor yellow tape"><i></i><i></i></div>
+<div class="node observation" data-focus="bc" data-role="primary" style="--x:142;--y:196;--w:145;--h:58" role="img" aria-label="Foveated image observations and gaze state"><svg class="views" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-views"/></svg><svg class="eyes" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-eyes"/></svg></div>
+<div class="node observation" data-focus="gaze" data-role="primary" style="--x:397;--y:196;--w:145;--h:58" role="img" aria-label="Foveated image observations and gaze state"><svg class="views" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-views"/></svg><svg class="eyes" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-eyes"/></svg></div>
+<div class="node policy" data-focus="bc" data-role="primary" style="--x:32;--y:286;--w:240;--h:118" >Gripper Policy<span class="status" role="img" aria-label="Trainable">🔥</span></div>
+<div class="node policy gaze" data-focus="gaze" data-role="primary" style="--x:310;--y:286;--w:240;--h:118" >Gaze Policy<span class="status" role="img" aria-label="Frozen">❄️</span></div>
+<div class="node update" data-focus="rl" data-role="primary" style="--x:640;--y:77;--w:110;--h:77" >RL<br>Update</div>
+<div class="node equation" data-focus="rl" data-role="primary" style="--x:600;--y:196;--w:258;--h:54" ><span>r = −D<sub>F</sub> (</span><span class="pred">A<sub>pred</sub></span>, <span class="truth">A<sub>gt</sub></span><span>)</span></div>
+<div class="node equation" data-focus="bc" data-role="primary" style="--x:600;--y:330;--w:258;--h:64" ><span>l<sub>BC</sub> = ‖</span><span class="pred">A<sub>pred</sub></span><span>−</span><span class="truth">A<sub>gt</sub></span><span>‖</span></div>
+<div class="node gaze-actions" data-focus="gaze" data-role="primary" style="--x:306;--y:456;--w:250;--h:54" aria-label="Gaze outputs: direction and depth adjustments, and value estimate"><span>Δθ</span><span>Δϕ</span><span>Δd</span><span>v</span></div>
+<div class="node arm-chunk" data-focus="bc rl" data-role="pred" style="--x:61;--y:444;--w:224;--h:74" role="img" aria-label="Predicted robot action chunk"><svg class="" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-arm"/></svg><svg class="" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-arm-reach"/></svg><svg class="" viewBox="0 0 100 80" aria-hidden="true"><use href="#seq-arm-reach"/></svg></div>
+<div class="node chunk" data-focus="bc rl" data-role="pred" style="--x:61;--y:521;--w:224;--h:22" ><i style="--c:#943d34"></i><i style="--c:#b64a40"></i><i style="--c:#d15b50"></i><i style="--c:#df7a70"></i><i style="--c:#e6958d"></i><i style="--c:#edada7"></i><i style="--c:#f3c8c3"></i><i style="--c:#f7ddda"></i></div>
+<div class="node " data-focus="bc gaze" data-role="scene" style="--x:904;--y:76;--w:273;--h:380" ><svg class="scene" viewBox="0 0 300 420" role="img" aria-label="Minimal camera and demonstrated gripper poses approaching a tape roll. The fixation frame originates between the eyes and points toward the tape.">
+<path d="M24 310H260L285 378H3Z" fill="#f7f9f8" stroke="#e0e6e3"/>
+<!-- Physical stereo camera, with the virtual fixation frame between its lenses. -->
+<rect x="68" y="35" width="114" height="38" rx="9" fill="#e9eef0" stroke="#8e9a9f" stroke-width="1.6"/>
+<g fill="#fff" stroke="#87959d" stroke-width="2"><circle cx="91" cy="54" r="11"/><circle cx="159" cy="54" r="11"/></g><g fill="#a5b6bf"><circle cx="91" cy="54" r="5"/><circle cx="159" cy="54" r="5"/></g>
+<text x="125" y="19" text-anchor="middle">Stereo camera</text>
+<path d="M125 75L194 330" fill="none" stroke="#c4d2d8" stroke-width="2" stroke-dasharray="5 5"/>
+<g stroke-width="4" stroke-linecap="round"><path d="M125 74L156 80" stroke="#c98279"/><path d="M125 74L106 96" stroke="#8aae8c"/><path d="M125 74L141 128" stroke="#7d9cbd"/></g>
+<path d="M153 93Q166 106 155 121" fill="none" stroke="#a0abb0" stroke-width="1.3"/>
+<text x="181" y="110">Δθ, Δϕ</text><text x="157" y="226" transform="rotate(75 157 226)">Δd</text>
+<!-- Demonstrated poses are schematic, not measured trajectory samples. -->
+<path d="M57 209C63 254 102 282 188 321" fill="none" stroke="#a6c7a3" stroke-width="2" stroke-dasharray="4 5"/>
+<g style="color:#81a97c"><use href="#seq-hand" transform="translate(57 209) rotate(-34)" opacity=".45"/><use href="#seq-hand" transform="translate(102 278) rotate(-52)" opacity=".7"/><use href="#seq-hand" transform="translate(181 314) rotate(-68)"/></g>
+<g stroke="#b3a166" stroke-width="1.2"><path d="M165 334V344C165 365 222 365 222 344V334" fill="#cbbb80"/><ellipse cx="193.5" cy="334" rx="28.5" ry="18" fill="#e5d99e"/><ellipse cx="193.5" cy="334" rx="14" ry="9" fill="#f7f9f8"/></g>
+<circle cx="194" cy="331" r="3.5" fill="#e8b394"/>
+</svg></div>
+<div class="node scene-label" data-focus="bc rl" data-role="truth" style="--x:900;--y:460;--w:275;--h:28" >Demo → fixation-frame chunk</div>
+<div class="node chunk" data-focus="bc rl" data-role="truth" style="--x:994;--y:489;--w:166;--h:22" ><i style="--c:#bdd8b9"></i><i style="--c:#b0d0ab"></i><i style="--c:#a0c599"></i><i style="--c:#92bb8c"></i><i style="--c:#83b27c"></i><i style="--c:#76a86f"></i><i style="--c:#699e62"></i><i style="--c:#5d9356"></i></div>
+</div></div><figcaption id="seq-figure-caption" class="carousel-caption"><span class="legend"><span>🔥 Trainable</span><span>❄️ Frozen</span></span>Solid arrows: data flow. Dashed arrows: training updates.</figcaption></figure>
+
+</div>
+            <p class="paragraph">
+                The framework only requires a computable offline error metric to compute reward.
+                For generative models such as diffusion models, this could be action reconstruction error or a distributional measure such as sample agreement.
+            </p>
+
+            <p class="paragraph">
+                Take a look at the output probabilities from the target selector during execution here!
+            </p>
+            <!-- Framework figure, converted from images/arch.pdf -->
+
+
+            <!-- Carousel: policy rollouts w/ target-selector (gaze) probability strip -->
+            <div class="carousel-container gaze-probs-carousel-container" style="margin-top: 12px;">
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="gaze-probs-carousel">
+                        <!-- Tea -->
+                        <div class="carousel-slide current-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_tea.webp">
+                                <source data-src="data/web-video/gaze_probs_tea.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Marker -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_marker.webp">
+                                <source data-src="data/web-video/gaze_probs_marker.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Boba -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_boba.webp">
+                                <source data-src="data/web-video/gaze_probs_boba.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Tape -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_tape.webp">
+                                <source data-src="data/web-video/gaze_probs_tape.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Toaster -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_toaster.webp">
+                                <source data-src="data/web-video/gaze_probs_toaster.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Wrench -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_wrench.webp">
+                                <source data-src="data/web-video/gaze_probs_wrench.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Pot -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 1440 / 1080; height: auto;" preload="none" width="1440" height="1080" data-poster="data/web-posters/posters/gaze_probs_pot.webp">
+                                <source data-src="data/web-video/gaze_probs_pot.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-gallery-footer">
+                    <p class="carousel-caption">Policy rollouts for each task with target probabilities (the raw output of the RL agent)</p>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="gaze-probs-carousel" aria-label="Previous slide">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="gaze-probs-carousel" aria-label="Next slide">→</button>
+                    </div>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-indicator current-slide" data-slide="0"></button>
+                    <button class="carousel-indicator" data-slide="1"></button>
+                    <button class="carousel-indicator" data-slide="2"></button>
+                    <button class="carousel-indicator" data-slide="3"></button>
+                    <button class="carousel-indicator" data-slide="4"></button>
+                    <button class="carousel-indicator" data-slide="5"></button>
+                    <button class="carousel-indicator" data-slide="6"></button>
+                </div>
+
+            </div>
+
+            <h2>Compacting the data manifold with fixation</h2>
+            <div class="paragraph-with-sidenote">
+                <p class="paragraph">
+                    Loosely speaking, there's a few main ways to make a neural net better: 1) improve the architecture or optimization dynamics to better interpolate your data, 2) increase data manifold coverage by using more data, or
+                    3) increase data manifold coverage by making the manifold itself more compact. Much of AVF's design follows the third approach, reducing the complexity
+                    of the learning problem by representing manipulation relative to fixation<sup class="footnote-marker"><a class="footnote-ref" id="fixation-relative-ref" href="#fixation-relative-note" aria-label="Footnote">2</a></sup>.
+
+
+                </p>
+
+                <aside class="sidenote" id="fixation-relative-note" role="note">
+                    <a class="sidenote-number" href="#fixation-relative-ref" aria-label="Back to footnote">2</a> Wrist cameras are an example of this too.
+                     Think about how easy it is to move left and right from an aligned wrist view, vs left and right from a distal fixed view.
+                     Gripper-centric viewpoints make the servoing data manifold more compact.
+                </aside>
+            </div>
+
+            <h3>Fixation-centric observations</h3>
+            <div class="paragraph-with-sidenote">
+                <p class="paragraph">
+                    By gazing at a point, AVF compacts the input image manifold by centering views on regions of interest. This is particularly noticable in
+                    pick and place tasks shown below.
+                </p>
+            </div>
+
+            <figure id="fixation-observations" class="fixation-panels" aria-label="Fixation observation comparison" aria-roledescription="carousel">
+                <div class="fixation-carousel-viewport">
+                    <div class="carousel-track fixation-carousel-track">
+                <div class="fixation-slide" role="group" aria-roledescription="slide" aria-label="1 of 2: Tape" aria-hidden="false">
+                    <div class="fixation-panels-grid">
+                        <section class="fixation-stage" aria-label="Pick tape">
+                            <div class="fixation-stage-heading"><h4 class="fixation-panels-title">Pick tape</h4><span>Static → Fixated</span></div>
+                            <video muted loop playsinline preload="none" width="464" height="192" aria-label="Pick tape: static observations on the left, matching fixated observations on the right" data-src="data/fixation-panels/rows/pick-tape.mp4" data-poster="data/fixation-panels/rows/pick-tape.webp"></video>
+                        </section>
+                        <section class="fixation-stage" aria-label="Place tape">
+                            <div class="fixation-stage-heading"><h4 class="fixation-panels-title">Place tape</h4><span>Static → Fixated</span></div>
+                            <video muted loop playsinline preload="none" width="464" height="192" aria-label="Place tape: static observations on the left, matching fixated observations on the right" data-src="data/fixation-panels/rows/place-tape.mp4" data-poster="data/fixation-panels/rows/place-tape.webp"></video>
+                        </section>
+                    </div>
+                </div>
+                <div class="fixation-slide" role="group" aria-roledescription="slide" aria-label="2 of 2: Tea" aria-hidden="true" inert>
+                    <div class="fixation-panels-grid">
+                        <section class="fixation-stage" aria-label="Pick tea">
+                            <div class="fixation-stage-heading"><h4 class="fixation-panels-title">Pick tea</h4><span>Static → Fixated</span></div>
+                            <video muted loop playsinline preload="none" width="464" height="192" aria-label="Pick tea: static observations on the left, matching fixated observations on the right" data-src="data/fixation-panels/rows/pick-tea.mp4" data-poster="data/fixation-panels/rows/pick-tea.webp"></video>
+                        </section>
+                        <section class="fixation-stage" aria-label="Place tea">
+                            <div class="fixation-stage-heading"><h4 class="fixation-panels-title">Place tea</h4><span>Static → Fixated</span></div>
+                            <video muted loop playsinline preload="none" width="464" height="192" aria-label="Place tea: static observations on the left, matching fixated observations on the right" data-src="data/fixation-panels/rows/place-tea.mp4" data-poster="data/fixation-panels/rows/place-tea.webp"></video>
+                        </section>
+                    </div>
+                </div>
+                    </div>
+                </div>
+                <figcaption class="results-gallery-footer">
+                    <span class="carousel-caption">Randomly sampled frames from the passive stereo policy and fixated policy during selected task stages. Fixation
+                        makes the space of input images more compact by centering on objects of interest. </span>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left fixation-prev" aria-label="Previous task" hidden>←</button>
+                        <button type="button" class="carousel-button carousel-button--right fixation-next" aria-label="Next task" hidden>→</button>
+                    </div>
+                </figcaption>
+                <div class="carousel-nav fixation-carousel-nav" role="group" aria-label="Choose task" hidden>
+                    <button type="button" class="carousel-indicator current-slide" data-task="0" aria-label="Show tape" aria-pressed="true"></button>
+                    <button type="button" class="carousel-indicator" data-task="1" aria-label="Show tea" aria-pressed="false"></button>
+                </div>
+
+            </figure>
+
+            <h3>Fixation-centric action frame</h3>
+            <p class="paragraph">
+                The same idea applies to the action space. In world coordinates, reaching for the same object at different
+                locations produces different gripper trajectories. Expressing proprioception and actions relative to fixation
+                brings these reaches into a more compact manifold, reducing the variation the policy needs to learn.
+                This lets the same data more densely cover the relevant motions, rather than spreading it across
+                different object locations.
+            </p>
+            <figure id="fixation-actions" class="fixation-actions" data-fixation-actions data-src="data/fixation-actions/tape-pick-widget.json" aria-label="Interactive comparison of world and fixation coordinates">
+                <p data-load-status role="alert" hidden></p>
+                <div class="views">
+                    <section class="view">
+                        <h4>World frame</h4><p class="view-note">Relative to the robot</p>
+                        <canvas id="world-view" tabindex="0" aria-label="World-frame gripper trajectories. Drag or use arrow keys to rotate both views; plus and minus to zoom."></canvas>
+                    </section>
+                    <section class="view">
+                        <h4>Fixation frame</h4><p class="view-note">Relative to the gaze direction</p>
+                        <canvas id="fixation-view" tabindex="0" aria-label="The same gripper trajectories in fixation coordinates. Drag or use arrow keys to rotate both views; plus and minus to zoom."></canvas>
+                    </section>
+                </div>
+                <div class="rgb-context">
+                    <p class="rgb-heading">Point to a frame to locate the pose above</p>
+                    <div class="rgb-strip">
+                        <button class="rgb-frame" type="button" data-example="0" aria-label="Locate the reach pose in both plots">
+                            <img src="data/fixation-actions/reach-0.webp" width="480" height="360" loading="lazy" decoding="async" alt="Robot gripper beside the yellow tape roll at the start of the reach">
+                        </button>
+                        <button class="rgb-frame" type="button" data-example="1" aria-label="Locate the approach pose in both plots">
+                            <img src="data/fixation-actions/reach-1.webp" width="480" height="360" loading="lazy" decoding="async" alt="Robot gripper approaching the yellow tape roll from above">
+                        </button>
+                        <button class="rgb-frame" type="button" data-example="2" aria-label="Locate the pre-grasp pose in both plots">
+                            <img src="data/fixation-actions/reach-2.webp" width="480" height="360" loading="lazy" decoding="async" alt="Robot gripper positioned around the yellow tape roll before grasping">
+                        </button>
+                    </div>
+                </div>
+                <figcaption class="figure-footer">
+                    <span>Recorded gripper poses during tape picking, shown in world and fixation coordinates at the same scale. Expressing motion relative to fixation brings reaches to different object locations into a more compact representation.</span>
+                </figcaption>
+            </figure>
+        </div>
+
+
+        <!-- ===========================================================
+             Experiment Trials — real and simulation success-rate figures
+        ============================================================ -->
+        <div class="section base-row add-top-padding">
+            <div style="width: 100%;" id="experiments">
+                <h1>Experiments</h1>
+            </div>
+
+            <div class="success-scroll-wrap">
+                <video class="success-scroll-video" loop muted playsinline preload="none" data-playback-rate="1.5" aria-label="Grid of successful AVF evaluation trials" width="1920" height="1080" style="aspect-ratio: 1920 / 1080; height: auto;" data-poster="data/web-posters/posters/success_scroll.webp">
+                    <source data-src="data/web-video/success_scroll.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <span class="success-scroll-label">1.5x speed, autonomous</span>
+            </div>
+            <p class="carousel-caption success-scroll-caption">
+                Randomly sampled successful trials.
+                <a href="viewer/">Click here to browse all trial videos.</a>
+            </p>
+
+            <div class="paragraph-with-sidenote">
+                    <p class="paragraph">
+                        In total we evaluated <b>over 1,000 real-world rollouts</b> across all baselines and ablations for AVF. We compare against two strong baselines that use the same policy architecture as AVF and are trained on the exact same demonstrations<sup class="footnote-marker"><a class="footnote-ref" id="demonstrations-ref" href="#demonstrations-note" aria-label="Footnote">3</a></sup>.
+                        The first baseline uses the RGB stereo inputs directly ("No Gaze"), and the second uses one stereo image along with two wrist-mounted cameras ("Ego + Wrist").
+                        Note that <i>both baselines have a significant observability advantage</i>, since AVF's field of view is such that it cannot see the entire stereo image at once.
+                        Both baselines are provided a full coverage view of the table, and with wrist cameras two additional high-resolution viewpoints of the gripper.
+
+                    </p>
+                    <aside class="sidenote" id="demonstrations-note" role="note">
+                        <a class="sidenote-number" href="#demonstrations-ref" aria-label="Back to footnote">3</a> We collect all data with wrist cameras for even comparison,
+                         for the main video results we actually took off the wrist cameras and AVF could handle the visual difference.
+                    </aside>
+            </div>
+
+            <div class="experiment-figures">
+                <figure class="spatial-distribution">
+                    <div class="spatial-distribution-grid">
+                        <div class="spatial-distribution-item">
+                            <img src="images/marker_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the marker task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Marker</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/toaster_overlay_avg_p0.jpg" alt="Evaluation spatial distribution for the toaster task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Toaster</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/wrench_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the wrench task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Wrench</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/boba_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the boba task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Boba</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/tea_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the tea task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Tea</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/real_tape_grid_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the tape task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Tape</span>
+                        </div>
+                        <div class="spatial-distribution-item">
+                            <img src="images/real_pot_lid_overlay_avg_pneg1.jpg" alt="Evaluation spatial distribution for the pot lid task" loading="lazy" width="640" height="480" decoding="async" />
+                            <span>Pot</span>
+                        </div>
+                    </div>
+                    <figcaption>Visualization of the 25 evaluation locations used for all policies. Objects are aligned with image overlays for consistent comparison.</figcaption>
+                </figure>
+            </div>
+
+            <h2>Camera comparisons</h2>
+
+            <!-- Sticky scope: the results plot stays pinned to the top of the viewport
+                 while the reader scrolls through the subsections that discuss it. -->
+            <div class="camera-comparison-scope">
+            <div class="experiment-figures real-results-figures">
+                <div class="plot-metric-toggle" data-real-plot-toggle role="group" aria-label="Real-world evaluation metric">
+                    <button class="active" type="button" aria-pressed="true" aria-controls="real-results-chart"
+                            data-plot-src="images/figure_real.svg"
+                            data-plot-alt="Real average and per-task success rates for No Gaze, Ego plus Wrist, and AVF across 640 real-world trials">
+                        Success rate
+                    </button>
+                    <button type="button" aria-pressed="false" aria-controls="real-results-chart"
+                            data-plot-src="images/figure_real_progression.svg"
+                            data-plot-alt="Real average and per-task progression rates for No Gaze, Ego plus Wrist, and AVF across 640 real-world trials">
+                        Task progression
+                    </button>
+                </div>
+                <figure class="spatial-distribution real-results-plot">
+                    <img id="real-results-chart" src="images/figure_real.svg" alt="Real average and per-task success rates for No Gaze, Ego plus Wrist, and AVF across 640 real-world trials" width="760" height="250" loading="lazy" decoding="async" />
+                </figure>
+            </div>
+            <p class="carousel-caption">Success rate is the percentage of trials that complete the full task. Task progression is the average percentage of task stages completed in order.</p>
+
+            <div class="viewer-cta-wrap">
+                <a class="viewer-cta" href="viewer/" aria-label="Open the AVF Eval Browser">
+                    <span class="viewer-cta-icon">
+                        <i class="ti ti-chart-histogram" aria-hidden="true"></i>
+                    </span>
+                    <span class="viewer-cta-copy">
+                        <strong>Click to see videos of all eval trials!</strong>
+                    </span>
+                    <span class="viewer-cta-action">
+                        Open Eval Browser
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    </span>
+                </a>
+            </div>
+
+            <h3>AVF significantly outperforms passive stereo</h3>
+            <div class="paragraph-with-sidenote">
+                <p class="paragraph">
+                    AVF beats passive stereo by a large margin, in aggregate <b>+40%</b> success rate. Passive stereo struggles with spatial understanding; learning about 3D servoing is harder from a
+                    static perspective than from a fixation-centered perspective.
+
+
+                </p>
+                <p class="paragraph">
+                    Passive stereo also lacks localized resolution necessary for precise tasks, particularly noticable in the near-0 performance on the marker task.
+                    Matching the resolution of AVF's fovea with uniform resolution would require over 10x the number of tokens.
+                </p>
+            </div>
+            <figure class="token-density-figure">
+                <img src="images/token_density.svg" alt="Token grids comparing dense stereo images with AVF&#x27;s three-level foveated stereo pyramid" width="800" height="240" loading="lazy" decoding="async" />
+                <figcaption>Achieving the same resolution as AVF's foveated inputs with passive stereo would require a cumbersome amount of input tokens.
+                    This is even more problematic at higher resolutions; foveation requires roughly linear scaling, dense tokenization requires quadratic.</figcaption>
+            </figure>
+
+            <h3>AVF matches wrist cameras, and beats them under tool occlusion</h3>
+            <p class="paragraph">
+                Using the <i>same input images</i> as passive stereo, active fixation closes the performance gap between wrist-free and wrist-camera policies.
+                When wrist cameras have a clear view, AVF matches the ego + wrist baseline. When they don't, the gap widens.
+                We intentionally collected some tasks which are hard to see from the YAM's wrist cameras. In these tasks (boba and pot lid), ego + wrist policies must rely
+                solely on the ego-centric camera for useful information, so their performance drops to roughly that of the static stereo baseline. Different wrist camera designs like dual-cameras or fisheye views
+                 can alleviate these problems, but it's impossible to always maintain good observability. This also requires teleoperators to teleop the robot in an unnatural way, one that sometimes harms
+                 data quality because of unintuitive manipulation strategies required for observability.
+            </p>
+            <div class="wrist-view-comparison">
+                <figure class="wrist-view-task">
+                    <div class="wrist-view-video-wrap">
+                        <div class="wrist-view-labels" aria-hidden="true">
+                            <span>Left wrist</span>
+                            <span>Right wrist</span>
+                        </div>
+                        <video loop muted playsinline preload="none" aria-label="Boba task: left wrist camera on the left, right wrist camera on the right" width="1280" height="480" style="aspect-ratio: 1280 / 480; height: auto;" data-poster="data/web-posters/posters/wrist_views_boba.webp">
+                            <source data-src="data/wrist_views_boba.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <figcaption class="carousel-caption wrist-view-task-name">Boba</figcaption>
+                </figure>
+                <figure class="wrist-view-task">
+                    <div class="wrist-view-video-wrap">
+                        <div class="wrist-view-labels" aria-hidden="true">
+                            <span>Left wrist</span>
+                            <span>Right wrist</span>
+                        </div>
+                        <video loop muted playsinline preload="none" aria-label="Pot lid task: left wrist camera on the left, right wrist camera on the right" width="1280" height="480" style="aspect-ratio: 1280 / 480; height: auto;" data-poster="data/web-posters/posters/wrist_views_pot.webp">
+                            <source data-src="data/wrist_views_pot.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <figcaption class="carousel-caption wrist-view-task-name">Pot lid</figcaption>
+                </figure>
+            </div>
+            <p class="carousel-caption wrist-view-caption">Wrist camera viewpoints during boba and pot lid tasks. Grasping tools poses significant visibility challenges for wrist cameras.</p>
+
+            <h3>AVF matches wrist cameras in precise tasks without tool occlusions</h3>
+            <p class="paragraph">
+                We also evaluate tasks with unobstructed wrist camera views: marker, tea, toaster, and wrench. These tasks require precise grasping and dexterous manipulation, making clear wrist camera views particularly helpful. Even on these tasks, AVF matches or exceeds the performance of the wrist camera baselines.
+            </p>
+            </div>
+
+
+            <h2>Distractor objects</h2>
+            <p class="paragraph">
+                We evaluated 3 tasks with unseen distractor objects scattered throughout the workspace. All comparisons use the <i>exact same object positions</i> to ensure comparability.
+                Notice how in these examples the wrist camera often reaches for the largest or most distinct object in its view. Once it begins reaching the policy cannot recover since the wrist camera loses sight
+                of the target. In contrast, AVF reaches for the correct object when its gaze is correctly directed at it, and mostly misses grasps when it is looking in the wrong place.
+                Decoupling vision and action could improve robustness in cluttered scenes by literally ignoring irrelevant information, as foveation does.
+            </p>
+            <!-- Paper Table 5, p. 18: 25 real trials per task/policy.
+                 The paper labels No Gaze "Exo (Stereo)".
+                 Progression = sum of subtask counts / (25 * number of stages);
+                 wrench and tape have 3 stages, tea has 2. The completion column is not an extra stage. -->
+            <figure class="distractor-summary" data-distractor-results>
+                <div class="plot-metric-toggle" role="group" aria-label="Distractor evaluation metric" hidden>
+                    <button type="button" class="active" aria-pressed="true" aria-controls="distractor-results-chart" data-metric="progression">Task progression</button>
+                    <button type="button" aria-pressed="false" aria-controls="distractor-results-chart" data-metric="grasp">First grasp</button>
+                    <button type="button" aria-pressed="false" aria-controls="distractor-results-chart" data-metric="success">Full-task success</button>
+                </div>
+                <picture class="distractor-results-plot">
+                    <source media="(max-width: 600px)" srcset="images/figure_distractor_progression-mobile.svg">
+                    <img id="distractor-results-chart" src="images/figure_distractor_progression.svg" width="520" height="250" loading="lazy" decoding="async" alt="Average and per-task progression with distractors for No Gaze, Ego plus Wrist, and AVF. Twenty-five trials per task and policy.">
+                </picture>
+                <figcaption aria-live="polite">Mean percentage of task stages completed. 25 trials per task bar.</figcaption>
+            </figure>
+            <div class="carousel-container distractor-carousel-container">
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="distractor-carousel">
+                        <div class="carousel-slide current-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/tape_012.webp">
+                                    <source data-src="data/distractor_comparisons/tape_012.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/tape_013.webp">
+                                    <source data-src="data/distractor_comparisons/tape_013.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/tape_014.webp">
+                                    <source data-src="data/distractor_comparisons/tape_014.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/tape_022.webp">
+                                    <source data-src="data/distractor_comparisons/tape_022.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/wrench_005.webp">
+                                    <source data-src="data/distractor_comparisons/wrench_005.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/wrench_000.webp">
+                                    <source data-src="data/distractor_comparisons/wrench_000.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/wrench_001.webp">
+                                    <source data-src="data/distractor_comparisons/wrench_001.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/wrench_009.webp">
+                                    <source data-src="data/distractor_comparisons/wrench_009.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                        <div class="carousel-slide">
+                            <figure class="distractor-comparison">
+                                <div class="distractor-policy-labels"><span>AVF</span><span>Ego + Wrist</span></div>
+                                <video controls loop muted playsinline preload="none" width="1600" height="600" style="aspect-ratio: 1600 / 600; height: auto;" data-poster="data/web-posters/posters/distractor_comparisons/tea_008.webp">
+                                    <source data-src="data/distractor_comparisons/tea_008.mp4?v=seek1" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-gallery-footer">
+                    <p class="carousel-caption">On eval trials with unseen distractors in the same configuration, ego + wrist policies often move towards the first object seen by the wrist cameras and get confused while AVF can ignore them.</p>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="distractor-carousel" aria-label="Previous slide">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="distractor-carousel" aria-label="Next slide">→</button>
+                    </div>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-indicator current-slide" data-slide="0" aria-label="Show distractor comparison 1"></button>
+                    <button class="carousel-indicator" data-slide="1" aria-label="Show distractor comparison 2"></button>
+                    <button class="carousel-indicator" data-slide="2" aria-label="Show distractor comparison 3"></button>
+                    <button class="carousel-indicator" data-slide="3" aria-label="Show distractor comparison 4"></button>
+                    <button class="carousel-indicator" data-slide="4" aria-label="Show distractor comparison 5"></button>
+                    <button class="carousel-indicator" data-slide="5" aria-label="Show distractor comparison 6"></button>
+                    <button class="carousel-indicator" data-slide="6" aria-label="Show distractor comparison 7"></button>
+                    <button class="carousel-indicator" data-slide="7" aria-label="Show distractor comparison 8"></button>
+                    <button class="carousel-indicator" data-slide="8" aria-label="Show distractor comparison 9"></button>
+                </div>
+
+            </div>
+
+
+        </div>
+
+        <!-- ===========================================================
+             Simulation results grid
+        ============================================================ -->
+        <div class="section base-row add-top-padding">
+            <div style="width: 100%;">
+                <h2>Simulated Eval</h2>
+            </div>
+
+            <div class="paragraph-with-sidenote">
+                <p class="paragraph">
+                    We found it extremely helpful for project development to build a MuJoCo twin of the YAM arms for high-volume, low-noise evaluations.
+                    Our goal here was <i>not</i> sim-to-real transfer, but rather a clean simulation-only benchmark that replicates as closely as possible the real world pipeline.
+                We built a VR teleoperation platform using the same GELLO leader arms as real teleop, and designed 6 tasks by importing assets from SAM-3D. Task stage success is labeled based on
+                   programatic physics checks.</p>
+            </div>
+
+            <div class="paragraph-with-sidenote">
+                <p class="paragraph">
+                    We train models on these simulated-only tasks with the exact same method, hyperparameters, camera parameters, and robot positions as real; the method does not leverage
+                    any simulated information besides what is available in real.
+            </div>
+
+            <div class="carousel-container sim-carousel-container sim-autonomous-carousel-container">
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="sim-autonomous-carousel">
+                        <div class="carousel-slide current-slide">
+                            <div class="sim-carousel-pair">
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous hang spoon simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_spoon.webp">
+                                        <source data-src="data/sim_autonomous_spoon.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Hang Spoon</figcaption>
+                                </figure>
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous medical tray simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_tray.webp">
+                                        <source data-src="data/sim_autonomous_tray.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Medical Tray</figcaption>
+                                </figure>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <div class="sim-carousel-pair">
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous plate in rack simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_plate.webp">
+                                        <source data-src="data/sim_autonomous_plate.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Plate in Rack</figcaption>
+                                </figure>
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous tape handover simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_tape.webp">
+                                        <source data-src="data/sim_autonomous_tape.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Tape Handover</figcaption>
+                                </figure>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <div class="sim-carousel-pair">
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous pot lid simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_pot.webp">
+                                        <source data-src="data/sim_autonomous_pot.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Pot Lid</figcaption>
+                                </figure>
+                                <figure class="results-grid-item">
+                                    <video loop muted playsinline preload="none" aria-label="Autonomous tiger pickup simulation rollout" width="2048" height="1024" style="aspect-ratio: 2048 / 1024; height: auto;" data-poster="data/web-posters/posters/sim_autonomous_tiger.webp">
+                                        <source data-src="data/sim_autonomous_tiger.mp4?v=hires" type="video/mp4">
+                                    </video>
+                                    <figcaption>Tiger Pickup</figcaption>
+                                </figure>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-gallery-footer">
+                    <p class="carousel-caption">Autonomous sim eval rollouts including eye motion</p>
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="sim-autonomous-carousel" aria-label="Previous slide">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="sim-autonomous-carousel" aria-label="Next slide">→</button>
+                    </div>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-indicator current-slide" data-slide="0" aria-label="Show autonomous simulation rollouts 1 and 2"></button>
+                    <button class="carousel-indicator" data-slide="1" aria-label="Show autonomous simulation rollouts 3 and 4"></button>
+                    <button class="carousel-indicator" data-slide="2" aria-label="Show autonomous simulation rollouts 5 and 6"></button>
+                </div>
+
+            </div>
+
+            <div class="experiment-figures">
+                <img class="sim-results-plot" src="images/figure_sim.svg" alt="Simulation average and per-task success rates for No Gaze, Ego plus Wrist, and AVF across 1800 simulation trials" width="700" height="250" loading="lazy" decoding="async" />
+            </div>
+
+
+            <h2>Ablations</h2>
+            <h3>Stereo and foveated vision</h3>
+            <!-- <span style="color:#7b2ff2;font-weight:600;">[NS: no explanation here? idk if most people understand sankeys actually]</span> -->
+            <p class="paragraph">
+                Ablating either stereo inputs or foveal inputs harms policy performance. Take a look at the sankey diagrams for a stage-by-stage breakdown;
+                the failure cases of these ablations tend to cluster around stages requiring precision like capping the marker, or pulling out the toaster oven tray.
+                Interestingly, boba performance was unaffected which we think was because the most precise phase of inserting the straw was performed near the
+                stereo camera, making any gains from foveation less beneficial.
+
+            </p>
+            <img src="images/ablation_table.svg" alt="Ablation table: per-task success rates for AVF, AVF without foveation, and AVF without stereo (mono)" style="display: block; width: 80%; height: auto; margin: 12px auto 0;" width="1000" height="150" loading="lazy" decoding="async" />
+
+
+            <!-- BEGIN GENERATED ABLATION SANKEYS -->
+<div class="ablation-sankeys">
+<div class="ablation-task-picker" role="group" aria-label="Choose an ablation task">
+<button type="button" data-ablation-task="marker" aria-controls="ablation-marker" aria-pressed="true">Marker</button>
+<button type="button" data-ablation-task="tea" aria-controls="ablation-tea" aria-pressed="false">Tea</button>
+<button type="button" data-ablation-task="toaster" aria-controls="ablation-toaster" aria-pressed="false">Toaster</button>
+<button type="button" data-ablation-task="wrench" aria-controls="ablation-wrench" aria-pressed="false">Wrench</button>
+<button type="button" data-ablation-task="boba" aria-controls="ablation-boba" aria-pressed="false">Boba</button>
+<button type="button" data-ablation-task="tape" aria-controls="ablation-tape" aria-pressed="false">Tape</button>
+<button type="button" data-ablation-task="pot-place" aria-controls="ablation-pot-place" aria-pressed="false">Pot lid</button>
+</div>
+<p class="carousel-caption ablation-reading-guide">Read left to right: green flows show trials progressing through task stages; red branches show where they fail. Thicker flows represent more trials. Each stage’s percentage is the fraction of trials from the preceding stage that advance. Click a diagram to browse its trials.</p>
+<div class="ablation-task-panel" id="ablation-marker">
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>17/25 succeeded · 68%</span></figcaption><a href="viewer/#/episodes/avf/marker" aria-label="Browse AVF Marker trials"><img src="images/ablation-sankeys/avf__marker.svg" alt="AVF, Marker: stage-by-stage trial progression; 17 of 25 trials succeeded" loading="lazy" width="916" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>5/25 succeeded · 20%</span></figcaption><a href="viewer/#/episodes/peripheral/marker" aria-label="Browse Without foveation Marker trials"><img src="images/ablation-sankeys/peripheral__marker.svg" alt="Without foveation, Marker: stage-by-stage trial progression; 5 of 25 trials succeeded" loading="lazy" width="916" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>8/25 succeeded · 32%</span></figcaption><a href="viewer/#/episodes/mono/marker" aria-label="Browse Without stereo Marker trials"><img src="images/ablation-sankeys/mono__marker.svg" alt="Without stereo, Marker: stage-by-stage trial progression; 8 of 25 trials succeeded" loading="lazy" width="916" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-tea" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>20/25 succeeded · 80%</span></figcaption><a href="viewer/#/episodes/avf/tea" aria-label="Browse AVF Tea trials"><img src="images/ablation-sankeys/avf__tea.svg" alt="AVF, Tea: stage-by-stage trial progression; 20 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>12/25 succeeded · 48%</span></figcaption><a href="viewer/#/episodes/peripheral/tea" aria-label="Browse Without foveation Tea trials"><img src="images/ablation-sankeys/peripheral__tea.svg" alt="Without foveation, Tea: stage-by-stage trial progression; 12 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>15/25 succeeded · 60%</span></figcaption><a href="viewer/#/episodes/mono/tea" aria-label="Browse Without stereo Tea trials"><img src="images/ablation-sankeys/mono__tea.svg" alt="Without stereo, Tea: stage-by-stage trial progression; 15 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-toaster" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>13/25 succeeded · 52%</span></figcaption><a href="viewer/#/episodes/avf/toaster" aria-label="Browse AVF Toaster trials"><img src="images/ablation-sankeys/avf__toaster.svg" alt="AVF, Toaster: stage-by-stage trial progression; 13 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>9/25 succeeded · 36%</span></figcaption><a href="viewer/#/episodes/peripheral/toaster" aria-label="Browse Without foveation Toaster trials"><img src="images/ablation-sankeys/peripheral__toaster.svg" alt="Without foveation, Toaster: stage-by-stage trial progression; 9 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>6/25 succeeded · 24%</span></figcaption><a href="viewer/#/episodes/mono/toaster" aria-label="Browse Without stereo Toaster trials"><img src="images/ablation-sankeys/mono__toaster.svg" alt="Without stereo, Toaster: stage-by-stage trial progression; 6 of 25 trials succeeded" loading="lazy" width="980" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-wrench" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>19/25 succeeded · 76%</span></figcaption><a href="viewer/#/episodes/avf/wrench" aria-label="Browse AVF Wrench trials"><img src="images/ablation-sankeys/avf__wrench.svg" alt="AVF, Wrench: stage-by-stage trial progression; 19 of 25 trials succeeded" loading="lazy" width="931" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>15/25 succeeded · 60%</span></figcaption><a href="viewer/#/episodes/peripheral/wrench" aria-label="Browse Without foveation Wrench trials"><img src="images/ablation-sankeys/peripheral__wrench.svg" alt="Without foveation, Wrench: stage-by-stage trial progression; 15 of 25 trials succeeded" loading="lazy" width="931" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>16/25 succeeded · 64%</span></figcaption><a href="viewer/#/episodes/mono/wrench" aria-label="Browse Without stereo Wrench trials"><img src="images/ablation-sankeys/mono__wrench.svg" alt="Without stereo, Wrench: stage-by-stage trial progression; 16 of 25 trials succeeded" loading="lazy" width="987" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-boba" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>11/25 succeeded · 44%</span></figcaption><a href="viewer/#/episodes/avf/boba" aria-label="Browse AVF Boba trials"><img src="images/ablation-sankeys/avf__boba.svg" alt="AVF, Boba: stage-by-stage trial progression; 11 of 25 trials succeeded" loading="lazy" width="949" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>12/25 succeeded · 48%</span></figcaption><a href="viewer/#/episodes/peripheral/boba" aria-label="Browse Without foveation Boba trials"><img src="images/ablation-sankeys/peripheral__boba.svg" alt="Without foveation, Boba: stage-by-stage trial progression; 12 of 25 trials succeeded" loading="lazy" width="949" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>10/25 succeeded · 40%</span></figcaption><a href="viewer/#/episodes/mono/boba" aria-label="Browse Without stereo Boba trials"><img src="images/ablation-sankeys/mono__boba.svg" alt="Without stereo, Boba: stage-by-stage trial progression; 10 of 25 trials succeeded" loading="lazy" width="949" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-tape" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>60/64 succeeded · 94%</span></figcaption><a href="viewer/#/episodes/avf/tape" aria-label="Browse AVF Tape trials"><img src="images/ablation-sankeys/avf__tape.svg" alt="AVF, Tape: stage-by-stage trial progression; 60 of 64 trials succeeded" loading="lazy" width="993" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>47/64 succeeded · 73%</span></figcaption><a href="viewer/#/episodes/peripheral/tape" aria-label="Browse Without foveation Tape trials"><img src="images/ablation-sankeys/peripheral__tape.svg" alt="Without foveation, Tape: stage-by-stage trial progression; 47 of 64 trials succeeded" loading="lazy" width="993" height="124" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>51/64 succeeded · 80%</span></figcaption><a href="viewer/#/episodes/mono/tape" aria-label="Browse Without stereo Tape trials"><img src="images/ablation-sankeys/mono__tape.svg" alt="Without stereo, Tape: stage-by-stage trial progression; 51 of 64 trials succeeded" loading="lazy" width="934" height="124" decoding="async" /></a></figure>
+</div>
+<div class="ablation-task-panel" id="ablation-pot-place" hidden>
+<figure class="ablation-sankey"><figcaption><span>AVF</span><span>13/25 succeeded · 52%</span></figcaption><a href="viewer/#/episodes/avf/pot%20place" aria-label="Browse AVF Pot lid trials"><img src="images/ablation-sankeys/avf__pot-place.svg" alt="AVF, Pot lid: stage-by-stage trial progression; 13 of 25 trials succeeded" loading="lazy" width="1014" height="132" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without foveation</span><span>10/25 succeeded · 40%</span></figcaption><a href="viewer/#/episodes/peripheral/pot%20place" aria-label="Browse Without foveation Pot lid trials"><img src="images/ablation-sankeys/peripheral__pot-place.svg" alt="Without foveation, Pot lid: stage-by-stage trial progression; 10 of 25 trials succeeded" loading="lazy" width="992" height="127" decoding="async" /></a></figure>
+<figure class="ablation-sankey"><figcaption><span>Without stereo</span><span>10/25 succeeded · 40%</span></figcaption><a href="viewer/#/episodes/mono/pot%20place" aria-label="Browse Without stereo Pot lid trials"><img src="images/ablation-sankeys/mono__pot-place.svg" alt="Without stereo, Pot lid: stage-by-stage trial progression; 10 of 25 trials succeeded" loading="lazy" width="1014" height="124" decoding="async" /></a></figure>
+</div>
+<p class="carousel-caption">Partial successes of ablations visualized as Sankey diagrams.</p>
+</div>
+<!-- END GENERATED ABLATION SANKEYS -->
+
+            <h3>Gaze-centric actions</h3>
+            <p class="paragraph">
+                Instead of fixation-relative actions, we train and test models in simulation using world-frame SE(3) inputs and outputs.
+                These also degrade in performance and interestingly roughly match the performance of the entirely non-fixating policy.
+                This seems to suggest that without fixation-frame canonicalization, the model can learn proprioceptive shortcuts without looking at the image.
+                One interpretation is that data coverage of the task in world-frame is sparser, leading to a worse policy.
+            </p>
+            <div class="experiment-figures">
+                <img class="sim-results-plot" src="images/figure_action_ablation.svg" alt="Action-frame ablation success rates, AVF versus world-relative actions: task average 74.3% versus 52.5%; tape handover (random) 79% versus 56%; pot lid 91% versus 58%; tiger (right half) 98% versus 81%; medical tray 78% versus 45%; plate in rack 70% versus 55%; hang spoon 30% versus 20%." width="700" height="250" loading="lazy" decoding="async" />
+            </div>
+        </div>
+
+        <!-- ===========================================================
+             Failures — clips copied from avf eval episodes in viewer/.
+             Each slide is commented with the episode it came from.
+        ============================================================ -->
+        <div class="section base-row add-top-padding">
+            <div style="width: 100%;">
+                <h1>Failures</h1>
+            </div>
+            <p class="paragraph">
+                See our <a href="viewer/">eval browser</a> to view all failures, we've picked some interesting ones here.
+            </p>
+            <div class="carousel-container">
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="failures-carousel">
+                        <!-- Ambiguity collapse — boba, episode_005 -->
+                        <div class="carousel-slide current-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 640 / 480; height: auto;" preload="none" width="640" height="480" data-poster="data/web-posters/posters/failure_ambiguity_boba.webp">
+                                <source data-src="data/failure_ambiguity_boba.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- Thrashing — marker, episode_004 -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 640 / 480; height: auto;" preload="none" width="640" height="480" data-poster="data/web-posters/posters/failure_thrashing_marker.webp">
+                                <source data-src="data/failure_thrashing_marker.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- pot-place, episode_014 -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 640 / 480; height: auto;" preload="none" width="640" height="480" data-poster="data/web-posters/posters/failure_pot_014.webp">
+                                <source data-src="data/failure_pot_014.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <!-- wrench, episode_006 -->
+                        <div class="carousel-slide">
+                            <video loop muted playsinline style="width: 100%; aspect-ratio: 640 / 320; height: auto;" preload="none" width="640" height="320" data-poster="data/web-posters/posters/failure_wrench_006.webp">
+                                <source data-src="data/failure_wrench_006.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-gallery-footer">
+
+                    <div class="results-gallery-arrows">
+                        <button type="button" class="carousel-button carousel-button--left" data-carousel="failures-carousel" aria-label="Previous slide">←</button>
+                        <button type="button" class="carousel-button carousel-button--right" data-carousel="failures-carousel" aria-label="Next slide">→</button>
+                    </div>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-indicator current-slide" data-slide="0"></button>
+                    <button class="carousel-indicator" data-slide="1"></button>
+                    <button class="carousel-indicator" data-slide="2"></button>
+                    <button class="carousel-indicator" data-slide="3"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="carousels.js?v=media1" defer></script>
+
+</body>
+
+</html>
